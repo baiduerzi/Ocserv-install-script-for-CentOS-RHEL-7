@@ -49,7 +49,7 @@ function ConfigEnvironmentVariable {
     #ocserv版本
     ocserv_version="1.0.0"
     version=${1-${ocserv_version}}
-    libtasn1_version=4.16
+    libtasn1_version=4.16.0
     #变量设置
     #单IP最大连接数，默认是2
     maxsameclients=10
