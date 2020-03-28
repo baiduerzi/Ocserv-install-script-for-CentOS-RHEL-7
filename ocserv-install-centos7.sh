@@ -8,25 +8,6 @@
 #                                                  #
 ####################################################
 
-#  Version: 1.2.5 20151009
-#  *源码下载改回作者的官方网站
-#  *更新ocserv的版本为0.10.9
-
-#  Version: 1.2.4 20150929
-#  *源码下载改为从 github 下载，作者网站似乎挂了
-#  *更新ocserv的版本为0.10.7
-#  *更新libtasn1的版本为4.7
-
-#  Version: 1.2.3 20150508
-#  *更新libtasn1的版本为4.5
-#  *更新ocserv的版本为0.10.4
-
-#  Version: 1.2.2 20150402
-#  *兼容CentOS 7.1，编译libtasn1-4.4替换系统的3.8版
-#  *修正 修改src/vpn.h路由条数 的命令
-
-#  +增加firewalld和iptables检测功能，使用systemctl is-active判断哪个防火墙在运行，请确保有一个防火墙自启动并加载默认配置
-#  *把几个功能用function分隔，如果脚本运行遇到问题，可以注释已经完成的部分，修正后继续
 
 
 #检测是否是root用户
@@ -59,7 +40,7 @@ function ConfigEnvironmentVariable {
     servercert=${2-server-cert.pem}
     serverkey=${3-server-key.pem}
     #配置目录，你可更改为 /etc/ocserv 之类的
-    confdir="/usr/local/etc/ocserv"
+    confdir="/etc/ocserv"
 
     #安装系统组件
     yum install -y -q net-tools bind-utils
@@ -156,17 +137,6 @@ function CompileOcserv {
     http-parser-devel http-parser protobuf-c-devel protobuf-c \
     pcllib-devel pcllib cyrus-sasl-gssapi dbus-devel policycoreutils gperf
 
-:<<_EOF_
-    wget -t 0 -T 60 "http://ftp.gnu.org/gnu/libtasn1/libtasn1-${libtasn1_version}.tar.gz"
-    tar axf libtasn1-${libtasn1_version}.tar.gz
-    cd libtasn1-${libtasn1_version}
-    ./configure --prefix=/usr --libdir=/usr/lib64 --includedir=/usr/include
-    make && make install
-    cd ..
-_EOF_
-
-    #增加libgnutls环境变量
-     ##export LIBGNUTLS_CFLAGS="-I/usr/include/" LIBGNUTLS_LIBS="-L/usr/lib/ -lgnutls"
 
     #下载ocserv并编译安装
     wget -t 0 -T 60 "ftp://ftp.infradead.org/pub/ocserv/ocserv-${version}.tar.xz"
