@@ -231,8 +231,8 @@ _EOF_
 	mkdir /etc/ocserv/ssl
     cp "${servercert}" ${confdir}/ssl/server.crt
     cp "${serverkey}" ${confdir}/ssl/server.key
-	cp "ca-key.pem" ${confdir}/ssl/server.key
-	cp "ca-cert.pem" ${confdir}/ssl/server.key
+	cp ca-key.pem ${confdir}/ssl/server.key
+	cp ca-cert.pem ${confdir}/ssl/server.key
 	
 
     # 编辑配置文件
@@ -313,9 +313,9 @@ function ConfigSystem {
     echo net.ipv4.ip_forward = 1 >> "/etc/sysctl.conf"
     systemctl daemon-reload
     echo "Enable ocserv service to start during bootup."
-    systemctl enable ocserv.service
+    systemctl enable ocserv
     #开启ocserv服务
-    systemctl start ocserv.service
+    systemctl start ocserv
     echo
 }
 
