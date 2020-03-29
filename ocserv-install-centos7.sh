@@ -64,7 +64,7 @@ function ConfigEnvironmentVariable {
     confdir="/etc/ocserv"
 
     #安装系统组件
-    yum install -y -q net-tools bind-utils
+    yum install -y -q net-tools NetworkManager bind-utils
     # 获取网卡接口名称
     systemctl start NetworkManager.service
     ethlist=$(nmcli --nocheck d | grep -v -E "(^(DEVICE|lo)|unavailable|^[^e])" | awk '{print $1}')
@@ -155,7 +155,7 @@ function InstallOcserv {
     #yum update -y -q
     yum install -y -q epel-release
     #安装ocserv依赖组件
-    yum install -y gnutls gnutls-utils gnutls-devel readline readline-devel libseccomp-devel http-parser-devel pcllib-devel protobuf-c\
+    yum install -y gnutls gnutls-utils gnutls-devel readline readline-devel libseccomp-devel http-parser-devel pcllib-devel protobuf-c net-tools\
     libnl-devel libtalloc libtalloc-devel libnl3-devel wget gawk readline-devel gperf\
     pam pam-devel libtalloc-devel xz libseccomp-devel gnutls-devel libnl3-devel lockfile-progs nuttcp lcov uid_wrapper pam_wrapper nss_wrapper socket_wrapper\
     tcp_wrappers-devel autogen autogen-libopts-devel tar libev-devel krb5-devel\
@@ -176,11 +176,12 @@ function InstallOcserv {
     #复制配置文件样本
     mkdir -p "${confdir}"
     #cp "doc/sample.config" "${confdir}/ocserv.conf"
-		wget --no-check-certificate -N -P "${confdir}" "https://raw.githubusercontent.com/baiduerzi/doubi-1/master/other/ocserv.conf"
+		wget --no-check-certificate -N -P "${confdir}" "https://github.com/baiduerzi/Ocserv-install-script-for-CentOS-RHEL-7/raw/master/ocserv.conf"
 	[[ ! -s "${conf}" ]] && echo -e "${Error} ocserv 配置文件下载失败 !" && rm -rf "${confdir}" && exit 1
 	
     cp "doc/systemd/standalone/ocserv.service" "/usr/lib/systemd/system/ocserv.service"
     cd ${basepath}	
+	
     # 安装 epel-release
    # if [ $(grep epel /etc/yum.repos.d/*.repo | wc -l) -eq 0 ]; then
    #     yum install -y -q epel-release && yum clean all && yum makecache fast
@@ -225,11 +226,14 @@ _EOF_
         --load-ca-certificate ca-cert.pem --load-ca-privkey ca-key.pem \
         --template server.tmpl --outfile ${servercert}
     fi
-
+	
     # 复制证书
 	mkdir /etc/ocserv/ssl
     cp "${servercert}" ${confdir}/ssl/server.crt
     cp "${serverkey}" ${confdir}/ssl/server.key
+	cp "ca-key.pem" ${confdir}/ssl/server.key
+	cp "ca-cert.pem" ${confdir}/ssl/server.key
+	
 
     # 编辑配置文件
     (echo "${password}"; sleep 1; echo "${password}") | ocpasswd -c "${confdir}/ocpasswd" ${username}
