@@ -199,10 +199,10 @@ function InstallOcserv {
     # 安装ocserv
     #yum install -y ocserv
 }
-Get_ip{
+Get_ip(){
 	ip=$(wget -qO- -t1 -T2 ipinfo.io/ip)
 }
-rand{
+rand(){
 	min=10000
 	max=$((60000-$min+1))
 	num=$(date +%s%N)
@@ -368,8 +368,6 @@ function PrintResult {
 ConfigEnvironmentVariable $@
 PrintEnvironmentVariable
 InstallOcserv
-Get_ip
-rand
 ConfigOcserv
 ConfigFirewall
 #Install-http-parser
