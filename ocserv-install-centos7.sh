@@ -199,20 +199,18 @@ function InstallOcserv {
     # 安装ocserv
     #yum install -y ocserv
 }
-Get_ip(){
-	ip=$(wget -qO- -t1 -T2 ipinfo.io/ip)
-}
-rand(){
-	min=10000
-	max=$((60000-$min+1))
-	num=$(date +%s%N)
-	echo $(($num%$max+$min))
-}
+
+#rand(){
+#	min=10000
+#	max=$((60000-$min+1))
+#	num=$(date +%s%N)
+#	echo $(($num%$max+$min))
+#}
 function ConfigOcserv {
-	lalala=$(rand)
+#	lalala=$(rand)
 	mkdir /tmp/ssl && cd /tmp/ssl
-	echo -e 'cn = "'${lalala}'"
-organization = "'${lalala}'"
+	echo -e 'cn = "'HUA-ZTE'"
+organization = "'HUA-ZTE'"
 serial = 1
 expiration_days = 3650
 ca
@@ -225,14 +223,15 @@ crl_signing_key' > ca.tmpl
 	certtool --generate-self-signed --load-privkey ca-key.pem --template ca.tmpl --outfile ca-cert.pem
 	[[ $? != 0 ]] && echo -e "${Error} 生成SSL证书文件失败(ca-cert.pem) !" && over
 	
-	Get_ip
-	if [[ -z "$ip" ]]; then
-		echo -e "${Error} 检测外网IP失败 !"
-		stty erase '^H' && read -p "请手动输入你的服务器外网IP:" ip
-		[[ -z "${ip}" ]] && echo "取消..." && over
-	fi
+#	Get_ip
+#	if [[ -z "$wget -qO- -t1 -T2 ipinfo.io/ip" ]]; then
+#		echo -e "${Error} 检测外网IP失败 !"
+#		stty erase '^H' && read -p "请手动输入你的服务器外网IP:" ip
+#		[[ -z "${ip}" ]] && echo "取消..." && over
+#	fi
+ip="wget -qO- -t1 -T2 ipinfo.io/ip"
 	echo -e 'cn = "'${ip}'"
-organization = "'${lalala}'"
+organization = "'HUA-ZTE'"
 expiration_days = 3650
 signing_key
 encryption_key
