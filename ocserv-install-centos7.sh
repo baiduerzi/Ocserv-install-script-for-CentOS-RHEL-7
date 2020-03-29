@@ -11,14 +11,14 @@ export PATH
 #                                                  #
 ####################################################
 
-sh_ver="1.1.3"
-file="/usr/local/sbin/ocserv"
-conf_file="/etc/ocserv"
+#sh_ver="1.1.3"
+#file="/usr/local/sbin/ocserv"
+confdir="/etc/ocserv"
 conf="/etc/ocserv/ocserv.conf"
-passwd_file="/etc/ocserv/ocpasswd"
+#passwd_file="/etc/ocserv/ocpasswd"
 log_file="/tmp/ocserv.log"
-ocserv_ver="1.0.0"
-PID_FILE="/var/run/ocserv.pid"
+#ocserv_ver="1.0.0"
+#PID_FILE="/var/run/ocserv.pid"
 
 Green_font_prefix="\033[32m" && Red_font_prefix="\033[31m" && Green_background_prefix="\033[42;37m" && Red_background_prefix="\033[41;37m" && Font_color_suffix="\033[0m"
 Info="${Green_font_prefix}[信息]${Font_color_suffix}"
@@ -39,8 +39,7 @@ if [[ $(grep "release 7." /etc/redhat-release 2>/dev/null | wc -l) -eq 0 ]]; the
     exit 1
 fi
 
-basepath=$(dirname $0)
-cd ${basepath}
+
 
 function ConfigEnvironmentVariable {
     #ocserv版本
@@ -166,22 +165,33 @@ function InstallOcserv {
 
 
     #下载ocserv并编译安装
-    wget -t 0 -T 60 "ftp://ftp.infradead.org/pub/ocserv/ocserv-${version}.tar.xz"
-    tar axf ocserv-${version}.tar.xz
-    cd ocserv-${version}
-    sed -i 's/#define MAX_CONFIG_ENTRIES.*/#define MAX_CONFIG_ENTRIES 200/g' src/vpn.h
-    ./configure && make && make install		
+	#ocserv_version="1.0.0"
+    #version=${1-${ocserv_version}}
+	mkdir "ocserv" && cd "ocserv"
+	wget "ftp://ftp.infradead.org/pub/ocserv/ocserv-${version}.tar.xz"
+	[[ ! -s "ocserv-${version}.tar.xz" ]] && echo -e "${Error} ocserv 源码文件下载失败 !" && rm -rf "ocserv-${version}.tar.xz" && exit 1
+	tar -xJf ocserv-${version}.tar.xz && cd ocserv-${version}
+	./configure && make && make install
+	cp "doc/systemd/standalone/ocserv.service" "/usr/lib/systemd/system/ocserv.service"
+	#cd .. && cd ..
+	
+	
+	
+    #wget -t 0 -T 60 "ftp://ftp.infradead.org/pub/ocserv/ocserv-${version}.tar.xz"
+    #tar axf ocserv-${version}.tar.xz
+    #cd ocserv-${version}
+    #sed -i 's/#define MAX_CONFIG_ENTRIES.*/#define MAX_CONFIG_ENTRIES 200/g' src/vpn.h
+    #./configure && make && make install		
 
 
     #复制配置文件样本
-    mkdir -p "${confdir}"
-    #cp "doc/sample.config" "${confdir}/ocserv.conf"
-		wget --no-check-certificate -N -P "${confdir}" "https://github.com/baiduerzi/Ocserv-install-script-for-CentOS-RHEL-7/raw/master/ocserv.conf"
-	[[ ! -s "${conf}" ]] && echo -e "${Error} ocserv 配置文件下载失败 !" && rm -rf "${confdir}" && exit 1
-	
-    cp "doc/systemd/standalone/ocserv.service" "/usr/lib/systemd/system/ocserv.service"
-    cd ${basepath}	
-	
+    confdir="/etc/ocserv"
+	mkdir -p "${confdir}"
+	cd ${confdir}
+		wget -t 0 -T 60 "https://github.com/baiduerzi/Ocserv-install-script-for-CentOS-RHEL-7/raw/master/ocserv.conf"
+		[[ ! -s "${conf}" ]] && echo -e "${Error} ocserv 配置文件下载失败 !" && rm -rf "${confdir}" && exit 1
+    
+
     # 安装 epel-release
    # if [ $(grep epel /etc/yum.repos.d/*.repo | wc -l) -eq 0 ]; then
    #     yum install -y -q epel-release && yum clean all && yum makecache fast
@@ -189,59 +199,59 @@ function InstallOcserv {
     # 安装ocserv
     #yum install -y ocserv
 }
-
-
+Get_ip{
+	ip=$(wget -qO- -t1 -T2 ipinfo.io/ip)
+}
+rand{
+	min=10000
+	max=$((60000-$min+1))
+	num=$(date +%s%N)
+	echo $(($num%$max+$min))
+}
 function ConfigOcserv {
-    # 检测是否有证书和 key 文件
-    if [[ ! -f "${servercert}" ]] || [[ ! -f "${serverkey}" ]]; then
-        # 创建 ca 证书和服务器证书（参考http://www.infradead.org/ocserv/manual.html#heading5）
-        certtool --generate-privkey --outfile ca-key.pem
-
-        cat << _EOF_ >ca.tmpl
-cn = "ocserv VPN"
-organization = "ocserv"
+	lalala=$(rand)
+	mkdir /tmp/ssl && cd /tmp/ssl
+	echo -e 'cn = "'${lalala}'"
+organization = "'${lalala}'"
 serial = 1
 expiration_days = 3650
 ca
 signing_key
 cert_signing_key
-crl_signing_key
-_EOF_
-
-        certtool --generate-self-signed --load-privkey ca-key.pem \
-        --template ca.tmpl --outfile ca-cert.pem
-        certtool --generate-privkey --outfile ${serverkey}
-
-        cat << _EOF_ >server.tmpl
-cn = "ocserv VPN"
-organization = "ocserv"
-serial = 2
+crl_signing_key' > ca.tmpl
+	[[ $? != 0 ]] && echo -e "${Error} 写入SSL证书签名模板失败(ca.tmpl) !" && over
+	certtool --generate-privkey --outfile ca-key.pem
+	[[ $? != 0 ]] && echo -e "${Error} 生成SSL证书密匙文件失败(ca-key.pem) !" && over
+	certtool --generate-self-signed --load-privkey ca-key.pem --template ca.tmpl --outfile ca-cert.pem
+	[[ $? != 0 ]] && echo -e "${Error} 生成SSL证书文件失败(ca-cert.pem) !" && over
+	
+	Get_ip
+	if [[ -z "$ip" ]]; then
+		echo -e "${Error} 检测外网IP失败 !"
+		stty erase '^H' && read -p "请手动输入你的服务器外网IP:" ip
+		[[ -z "${ip}" ]] && echo "取消..." && over
+	fi
+	echo -e 'cn = "'${ip}'"
+organization = "'${lalala}'"
 expiration_days = 3650
 signing_key
-encryption_key #only if the generated key is an RSA one
-tls_www_server
-_EOF_
-
-        certtool --generate-certificate --load-privkey ${serverkey} \
-        --load-ca-certificate ca-cert.pem --load-ca-privkey ca-key.pem \
-        --template server.tmpl --outfile ${servercert}
-    fi
+encryption_key
+tls_www_server' > server.tmpl
+	[[ $? != 0 ]] && echo -e "${Error} 写入SSL证书签名模板失败(server.tmpl) !" && over
+	certtool --generate-privkey --outfile server-key.pem
+	[[ $? != 0 ]] && echo -e "${Error} 生成SSL证书密匙文件失败(server-key.pem) !" && over
+	certtool --generate-certificate --load-privkey server-key.pem --load-ca-certificate ca-cert.pem --load-ca-privkey ca-key.pem --template server.tmpl --outfile server-cert.pem
+	[[ $? != 0 ]] && echo -e "${Error} 生成SSL证书文件失败(server-cert.pem) !" && over
 	
-    # 复制证书
 	mkdir /etc/ocserv/ssl
-    cp "${servercert}" ${confdir}/ssl/server.crt
-    cp "${serverkey}" ${confdir}/ssl/server.key
-	cp ca-key.pem ${confdir}/ssl/server.key
-	cp ca-cert.pem ${confdir}/ssl/server.key
-	
+	mv ca-cert.pem /etc/ocserv/ssl/ca-cert.pem
+	mv ca-key.pem /etc/ocserv/ssl/ca-key.pem
+	mv server-cert.pem /etc/ocserv/ssl/server-cert.pem
+	mv server-key.pem /etc/ocserv/ssl/server-key.pem
 
     # 编辑配置文件
     (echo "${password}"; sleep 1; echo "${password}") | ocpasswd -c "${confdir}/ocpasswd" ${username}
-
     sed -i 's@auth = "pam"@#auth = "pam"\nauth = "plain[passwd=/etc/ocserv/ocpasswd]"@g' "${confdir}/ocserv.conf"
-
-														 
-																								   
     sed -i "s/max-same-clients = 2/max-same-clients = ${maxsameclients}/g" "${confdir}/ocserv.conf"
     sed -i "s/max-clients = 16/max-clients = ${maxclients}/g" "${confdir}/ocserv.conf"
     sed -i "s/tcp-port = 443/tcp-port = ${port}/g" "${confdir}/ocserv.conf"
@@ -250,12 +260,9 @@ _EOF_
     sed -i 's/^cert-user-oid = /#cert-user-oid = /g' "${confdir}/ocserv.conf"
     sed -i "s/default-domain = example.com/#default-domain = example.com/g" "${confdir}/ocserv.conf"
     sed -i "s@#ipv4-network = 192.168.1.0/24@ipv4-network = ${vpnnetwork}@g" "${confdir}/ocserv.conf"
-																						
     sed -i "s/#dns = 192.168.1.2/dns = ${dns1}\ndns = ${dns2}/g" "${confdir}/ocserv.conf"
-																					 
-    sed -i "s/cookie-timeout = 300/cookie-timeout = 86400/g" "${confdir}/ocserv.conf"
-																																				  
-    sed -i 's/user-profile = profile.xml/#user-profile = profile.xml/g' "${confdir}/ocserv.conf"
+	sed -i "s/cookie-timeout = 300/cookie-timeout = 86400/g" "${confdir}/ocserv.conf"
+	sed -i 's/user-profile = profile.xml/#user-profile = profile.xml/g' "${confdir}/ocserv.conf"
 
 										  
 }
@@ -361,6 +368,8 @@ function PrintResult {
 ConfigEnvironmentVariable $@
 PrintEnvironmentVariable
 InstallOcserv
+Get_ip
+rand
 ConfigOcserv
 ConfigFirewall
 #Install-http-parser
