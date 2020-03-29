@@ -172,7 +172,9 @@ function InstallOcserv {
 	[[ ! -s "ocserv-${version}.tar.xz" ]] && echo -e "${Error} ocserv 源码文件下载失败 !" && rm -rf "ocserv-${version}.tar.xz" && exit 1
 	tar -xJf ocserv-${version}.tar.xz && cd ocserv-${version}
 	./configure && make && make install
-	cp "doc/systemd/standalone/ocserv.service" "/usr/lib/systemd/system/ocserv.service"
+	#cp "doc/systemd/standalone/ocserv.service" "/usr/lib/systemd/system/ocserv.service"
+	cp "doc/systemd/socket-activated/ocserv.service" "/usr/lib/systemd/system/ocserv.service"
+	cp "doc/systemd/socket-activated/ocserv.socket" "/var/run/ocserv.socket"
 	#cd .. && cd ..
 	
 	
@@ -319,9 +321,9 @@ function ConfigSystem {
     echo net.ipv4.ip_forward = 1 >> "/etc/sysctl.conf"
     systemctl daemon-reload
     echo "Enable ocserv service to start during bootup."
-    systemctl enable ocserv
+    systemctl enable ocserv.service
     #开启ocserv服务
-    systemctl start ocserv
+    systemctl start ocserv.service
     echo
 }
 
